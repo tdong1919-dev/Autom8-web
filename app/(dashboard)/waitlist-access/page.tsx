@@ -265,17 +265,18 @@ export default function WaitlistAccessPage() {
             <div className="flex items-start gap-3">
               <span className="text-2xl shrink-0">📚</span>
               <div>
-                <p className="text-sm font-semibold text-text-primary mb-2">What you&apos;ll learn</p>
+                <p className="text-sm font-semibold text-text-primary mb-2">📚 What you&apos;ll gain</p>
                 <div className="grid sm:grid-cols-2 gap-1.5">
                   {[
-                    "n8n, Make.com, Zapier workflow design",
-                    "Prompt engineering & AI agent design",
-                    "LLM integrations (OpenAI, Claude, Gemini)",
-                    "Instagram & social media automation",
-                    "CRM & sales funnel automation",
-                    "Content creation & scheduling at scale",
-                    "Building & selling automation services",
-                    "AI-native business model design",
+                    "Build systems that save time and scale operations",
+                    "Turn content into a consistent client acquisition engine",
+                    "Create AI-powered workflows that reduce manual work",
+                    "Operate with the speed and leverage of larger companies",
+                    "Develop future-proof skills in automation and AI systems",
+                    "Increase output without increasing overhead",
+                    "Build digital infrastructure that works around the clock",
+                    "Position yourself ahead of the next shift in business and technology",
+                    "Understand how modern companies are becoming AI-native",
                   ].map((item) => (
                     <div key={item} className="flex items-start gap-1.5 text-xs text-text-secondary">
                       <span className="text-primary mt-0.5 shrink-0">✓</span> {item}
