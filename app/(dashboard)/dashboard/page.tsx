@@ -14,6 +14,62 @@ const activityIcon: Record<string, string> = {
   escalation: "⚠️",
 };
 
+const REFERRAL_CODE = "REFER26";
+const TEXT_SUPPORT = "2404101925";
+
+const socialShareLinks = (code: string, url: string) => [
+  { label: "Text / SMS", icon: "💬", href: `sms:?body=Use my code ${code} on Autom8 to get a free month! ${url}` },
+  { label: "Instagram", icon: "📸", href: `https://www.instagram.com/` },
+  { label: "Facebook", icon: "📘", href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=Use+my+code+${code}+to+get+a+free+month+on+Autom8!` },
+  { label: "Messenger", icon: "💬", href: `https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=YOUR_APP_ID` },
+  { label: "TikTok", icon: "🎵", href: `https://www.tiktok.com/` },
+  { label: "WhatsApp", icon: "🟢", href: `https://wa.me/?text=Use+my+code+${code}+for+a+free+month+on+Autom8%21+${encodeURIComponent(url)}` },
+  { label: "LinkedIn", icon: "💼", href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}` },
+];
+
+const socialAccounts = [
+  {
+    name: "Instagram",
+    icon: "📸",
+    status: "live" as const,
+    desc: "Comments, DMs & Stories",
+    href: "/onboarding",
+    cta: "Connect Now",
+  },
+  {
+    name: "TikTok",
+    icon: "🎵",
+    status: "soon" as const,
+    desc: "Comments & DM replies",
+    href: null,
+    cta: "Coming Soon",
+  },
+  {
+    name: "YouTube",
+    icon: "▶️",
+    status: "soon" as const,
+    desc: "Comment management",
+    href: null,
+    cta: "Coming Soon",
+  },
+  {
+    name: "X / Twitter",
+    icon: "𝕏",
+    status: "soon" as const,
+    desc: "Mentions & replies",
+    href: null,
+    cta: "Coming Soon",
+  },
+  {
+    name: "Facebook",
+    icon: "📘",
+    status: "soon" as const,
+    desc: "Comments & Messenger",
+    href: null,
+    cta: "Coming Soon",
+  },
+];
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -23,7 +79,6 @@ export default async function DashboardPage() {
     getBrandProfile().catch(() => null),
   ]);
 
-  // Pending review queue count
   let reviewCount = 0;
   if (user) {
     const { count } = await supabase
@@ -57,7 +112,8 @@ export default async function DashboardPage() {
     { title: "Review Queue", value: String(reviewCount), change: "", changePositive: false },
   ];
 
-  const brandSetupComplete = !!brand?.business_name;
+  const referralUrl = `https://autom8.app/signup?ref=${REFERRAL_CODE}`;
+  const shares = socialShareLinks(REFERRAL_CODE, referralUrl);
 
   return (
     <div className="p-5 md:p-7 max-w-5xl mx-auto space-y-6">
@@ -94,59 +150,51 @@ export default async function DashboardPage() {
       {/* Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {metrics.map((m, i) => (
-          <MetricCard
-            key={m.title}
-            {...m}
-            highlight={i === 0}
-          />
+          <MetricCard key={m.title} {...m} highlight={i === 0} />
         ))}
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
-        {/* Quick Actions */}
-        <Card header={<h2 className="text-base font-semibold text-text-primary">Quick Actions</h2>}>
+        {/* Connect Accounts */}
+        <Card header={<h2 className="text-base font-semibold text-text-primary">Connect Accounts</h2>}>
           <div className="space-y-2.5">
-            {[
-              {
-                label: "Connect Instagram",
-                desc: "Link your account to start auto-replies",
-                icon: "📱",
-                href: "/onboarding",
-                cta: "Connect",
-                done: false,
-              },
-              {
-                label: "Turn On Automation",
-                desc: "Let Autom8 reply while you focus on growth",
-                icon: "⚡",
-                href: "/settings",
-                cta: "Activate",
-                done: false,
-              },
-              {
-                label: "Edit Brand Voice",
-                desc: "Train the AI to sound exactly like you",
-                icon: "🎨",
-                href: "/settings",
-                cta: "Edit",
-                done: brandSetupComplete,
-              },
-            ].map((action) => (
-              <Link key={action.label} href={action.href}>
-                <div className="flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/3 transition-all group">
-                  <span className="text-xl shrink-0">{action.icon}</span>
+            {socialAccounts.map((account) => {
+              const isLive = account.status === "live";
+              const inner = (
+                <div
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all group
+                    ${isLive
+                      ? "border-border hover:border-primary/30 hover:bg-primary/3 cursor-pointer"
+                      : "border-border bg-surface/50 opacity-60 cursor-not-allowed"
+                    }`}
+                >
+                  <span className="text-xl shrink-0">{account.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-text-primary group-hover:text-white transition-colors">{action.label}</p>
-                    <p className="text-xs text-text-muted truncate">{action.desc}</p>
+                    <p className={`text-sm font-medium ${isLive ? "text-text-primary group-hover:text-white transition-colors" : "text-text-muted"}`}>
+                      {account.name}
+                    </p>
+                    <p className="text-xs text-text-muted truncate">{account.desc}</p>
                   </div>
-                  {action.done ? (
-                    <span className="text-xs text-success shrink-0">✓ Done</span>
+                  {isLive ? (
+                    <span className="text-xs text-primary shrink-0 group-hover:translate-x-0.5 transition-transform">
+                      {account.cta} →
+                    </span>
                   ) : (
-                    <span className="text-xs text-primary shrink-0 group-hover:translate-x-0.5 transition-transform">{action.cta} →</span>
+                    <span className="text-[10px] font-semibold bg-border text-text-muted px-2 py-0.5 rounded-full shrink-0">
+                      Coming Soon
+                    </span>
                   )}
                 </div>
-              </Link>
-            ))}
+              );
+
+              return isLive ? (
+                <Link key={account.name} href={account.href!}>
+                  {inner}
+                </Link>
+              ) : (
+                <div key={account.name}>{inner}</div>
+              );
+            })}
           </div>
         </Card>
 
@@ -193,6 +241,69 @@ export default async function DashboardPage() {
           </div>
         )}
       </Card>
+
+      {/* Text Support */}
+      <Card>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">💬</span>
+            <div>
+              <p className="text-sm font-semibold text-text-primary">Text Support</p>
+              <p className="text-xs text-text-muted">Real humans, real help — text us anytime</p>
+            </div>
+          </div>
+          <a
+            href={`sms:${TEXT_SUPPORT}`}
+            className="shrink-0 flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors rounded-xl px-4 py-2.5 text-sm font-semibold"
+          >
+            <span>📱</span>
+            Text {TEXT_SUPPORT}
+          </a>
+        </div>
+      </Card>
+
+      {/* Referral Section */}
+      <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-accent-purple/5 p-6 shadow-[0_0_32px_rgba(123,63,242,0.04)]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">🎁</span>
+              <p className="text-base font-bold text-text-primary">Refer a Friend, Get a Free Month</p>
+            </div>
+            <p className="text-sm text-text-secondary">
+              Share your referral code and both of you get rewarded when they sign up.
+            </p>
+          </div>
+          <div className="shrink-0 text-center">
+            <div className="rounded-xl border-2 border-primary/30 bg-primary/10 px-6 py-3">
+              <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">Your Code</p>
+              <p className="text-2xl font-black text-primary tracking-widest">{REFERRAL_CODE}</p>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-text-muted mb-3">Share via:</p>
+        <div className="flex flex-wrap gap-2">
+          {shares.map((s) => (
+            <a
+              key={s.label}
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-surface border border-border hover:border-primary/30 hover:bg-primary/5 transition-all rounded-xl px-3 py-2 text-xs font-medium text-text-secondary hover:text-text-primary"
+            >
+              <span>{s.icon}</span> {s.label}
+            </a>
+          ))}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-border/50">
+          <p className="text-xs text-text-muted">
+            Referral link:{" "}
+            <span className="text-primary font-mono text-[11px]">{referralUrl}</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
