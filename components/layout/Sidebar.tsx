@@ -116,14 +116,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Logo */}
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-          <Image
-            src="/logo.png"
-            alt="Autom8"
-            width={140}
-            height={60}
-            className="object-contain"
-            priority
-          />
+          <a href="https://autom8ig.io" target="_blank" rel="noopener noreferrer">
+            <Image
+              src="/logo.png"
+              alt="Autom8"
+              width={140}
+              height={60}
+              className="object-contain"
+              priority
+            />
+          </a>
           <button onClick={onClose} aria-label="Close" className="md:hidden text-white/40 hover:text-white/80 p-1 shrink-0">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>

@@ -104,7 +104,7 @@ function DemoSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
           ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:z-auto shrink-0`}
       >
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <Image src="/logo.png" alt="Autom8" width={120} height={50} className="object-contain" priority />
+          <a href="https://autom8ig.io"><Image src="/logo.png" alt="Autom8" width={120} height={50} className="object-contain" priority /></a>
           <button onClick={onClose} aria-label="Close" className="md:hidden text-text-muted hover:text-white p-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
@@ -168,9 +168,6 @@ function DemoTopNav({ onMenuClick }: { onMenuClick: () => void }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
-      <div className="md:hidden absolute left-1/2 -translate-x-1/2">
-        <Image src="/logo.png" alt="Autom8" width={80} height={34} className="object-contain" priority />
-      </div>
       <div className="hidden md:block" />
       <div className="flex items-center gap-3">
         <Link href="/signup" className="text-xs font-semibold bg-primary text-white px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity shadow-[0_0_12px_rgba(123,63,242,0.3)]">
