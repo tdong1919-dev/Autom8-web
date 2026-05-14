@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Input from "@/components/ui/Input";
@@ -79,9 +80,11 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-bold text-primary">autom8</Link>
-          <p className="text-white/40 text-sm mt-2">Create your free account</p>
+        <div className="text-center">
+          <Link href="https://autom8ig.io" className="inline-block">
+            <Image src="/logo.png" alt="Autom8" width={160} height={68} className="object-contain mx-auto" priority />
+          </Link>
+          <p className="text-white/40 text-sm mt-3 mb-3">Create your free account</p>
         </div>
 
         <div className="bg-surface border border-white/5 rounded-2xl p-8">
