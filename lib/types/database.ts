@@ -155,6 +155,18 @@ export interface BrandProfile {
   formality_level: number
   created_at: string
   updated_at: string
+  language: string | null
+  phone: string | null
+  location: string | null
+  hours: string | null
+  services_products: string | null
+  pricings: string | null
+  brand_voice_examples: string | null
+  booking_link: string | null
+  faq_1: string | null
+  faq_2: string | null
+  faq_3: string | null
+  allowed_ctas: string | null
 }
 
 export interface BrandProfileInsert {
@@ -172,6 +184,18 @@ export interface BrandProfileInsert {
   formality_level?: number
   created_at?: string
   updated_at?: string
+  language?: string | null
+  phone?: string | null
+  location?: string | null
+  hours?: string | null
+  services_products?: string | null
+  pricings?: string | null
+  brand_voice_examples?: string | null
+  booking_link?: string | null
+  faq_1?: string | null
+  faq_2?: string | null
+  faq_3?: string | null
+  allowed_ctas?: string | null
 }
 
 export interface BrandProfileUpdate {
@@ -186,6 +210,18 @@ export interface BrandProfileUpdate {
   emoji_allowed?: boolean
   formality_level?: number
   updated_at?: string
+  language?: string | null
+  phone?: string | null
+  location?: string | null
+  hours?: string | null
+  services_products?: string | null
+  pricings?: string | null
+  brand_voice_examples?: string | null
+  booking_link?: string | null
+  faq_1?: string | null
+  faq_2?: string | null
+  faq_3?: string | null
+  allowed_ctas?: string | null
 }
 
 // ---------------------------------------------------------------------------
