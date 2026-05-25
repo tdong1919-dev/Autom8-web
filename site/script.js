@@ -73,6 +73,10 @@ const leadForm = document.getElementById('leadForm');
 leadForm?.addEventListener('submit', e => {
   e.preventDefault();
   const email = document.getElementById('email').value.trim();
+  if (!email) {
+    window.location.href = '/signup';
+    return;
+  }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
     toast('Please enter a valid email');
     return;
