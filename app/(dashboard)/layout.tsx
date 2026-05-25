@@ -1,11 +1,23 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Sidebar, TopNav } from "@/components/layout";
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading } = useAuth();
+
+  // Pick up ig_business_id stored during OAuth redirect if user wasn't logged in yet
+  useEffect(() => {
+    const pending = localStorage.getItem("pending_ig_business_id");
+    if (!pending || loading) return;
+    localStorage.removeItem("pending_ig_business_id");
+    fetch("/api/social/mark-connected", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ig_business_id: pending }),
+    }).catch(() => {});
+  }, [loading]);
 
   const derivedUser = {
     name: loading
