@@ -79,3 +79,85 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.08);
 }
+
+
+/* ── Blog Prose ───────────────────────────────────────────────── */
+.prose-blog {
+  color: #A1A1AA;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+.prose-blog h2 {
+  color: #FFFFFF;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 2.5rem 0 1rem;
+  letter-spacing: -0.02em;
+}
+.prose-blog h3 {
+  color: #FFFFFF;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+}
+.prose-blog p {
+  margin-bottom: 1.5rem;
+}
+.prose-blog strong {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.prose-blog em {
+  color: #d4d4d8;
+  font-style: italic;
+}
+.prose-blog ul, .prose-blog ol {
+  margin: 1.5rem 0;
+  padding-left: 1.75rem;
+}
+.prose-blog li {
+  margin-bottom: 0.5rem;
+}
+.prose-blog ul li { list-style-type: disc; }
+.prose-blog ol li { list-style-type: decimal; }
+.prose-blog blockquote {
+  border-left: 3px solid #7b3ff2;
+  margin: 2rem 0;
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  color: #d4d4d8;
+  font-style: italic;
+}
+.prose-blog code {
+  background: #1A1A1A;
+  border: 1px solid #262626;
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.875em;
+  color: #f857a6;
+  font-family: ui-monospace, monospace;
+}
+.prose-blog pre {
+  background: #121212;
+  border: 1px solid #262626;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  margin: 1.75rem 0;
+}
+.prose-blog pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #A1A1AA;
+}
+.prose-blog a {
+  color: #7b3ff2;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-blog a:hover { color: #f857a6; }
+.prose-blog hr {
+  border: none;
+  border-top: 1px solid #262626;
+  margin: 2.5rem 0;
+}
