@@ -34,7 +34,8 @@ export default async function BlogPostPage({ params }: Props) {
   const post = getPostBySlug(slug);
   if (!post || post.draft) notFound();
 
-  const html = await marked(post.content, { gfm: true, breaks: true });
+  marked.setOptions({ gfm: true, breaks: true });
+  const html = marked.parse(post.content) as string;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
