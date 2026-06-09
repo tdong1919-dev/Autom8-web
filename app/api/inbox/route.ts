@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { AiReplyUpdate, InboxRow, ReplyStatus } from '@/lib/types/database'
+import type { AiReplyUpdate, ReplyStatus } from '@/lib/types/database'
 
 const PAGE_SIZE = 20
 
@@ -20,61 +20,63 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const VALID_STATUSES: ReplyStatus[] = ['pending', 'approved', 'rejected', 'posted']
   const rawStatus = searchParams.get('status')
-  const _status: ReplyStatus | null = rawStatus && (VALID_STATUSES as string[]).includes(rawStatus) ? (rawStatus as ReplyStatus) : null
+  const status: ReplyStatus | null = rawStatus && (VALID_STATUSES as string[]).includes(rawStatus) ? (rawStatus as ReplyStatus) : null
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
-  const _offset = (page - 1) * PAGE_SIZE
+  const offset = (page - 1) * PAGE_SIZE
 
-  // TODO: replace with real Supabase query
-  // let query = supabase
-  //   .from('ai_replies')
-  //   .select(`
-  //     *,
-  //     comment:comments(*)
-  //   `, { count: 'exact' })
-  //   .order('created_at', { ascending: false })
-  //   .range(offset, offset + PAGE_SIZE - 1)
-  //
-  // // Join through comments → social_accounts to enforce user ownership
-  // query = query.eq('comments.social_accounts.user_id', user.id)
-  //
-  // if (status) {
-  //   query = query.eq('status', status)
-  // }
-  //
-  // const { data, count, error } = await query
-  // if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Step 1: get user's social account IDs
+  const { data: userAccounts } = await supabase
+    .from('social_accounts')
+    .select('id')
+    .eq('user_id', user.id)
 
-  // Mock response
-  const mock: InboxRow[] = [
-    {
-      id: 'reply-1',
-      comment_id: 'comment-1',
-      draft_text: 'Thanks for reaching out! We\'d love to help you with that. 💜',
-      edited_text: null,
-      status: 'pending',
-      reviewed_by: null,
-      reviewed_at: null,
-      rejection_reason: null,
-      created_at: new Date().toISOString(),
-      comment: {
-        id: 'comment-1',
-        social_account_id: 'sa-1',
-        external_comment_id: 'ig-123456',
-        commenter_username: '@jane_doe',
-        comment_text: 'How much do your facials cost?',
-        post_url: 'https://instagram.com/p/example',
-        received_at: new Date().toISOString(),
-      },
-    },
-  ]
+  const accountIds = (userAccounts ?? []).map((a: { id: string }) => a.id)
+
+  if (accountIds.length === 0) {
+    return NextResponse.json({
+      data: [],
+      pagination: { page, pageSize: PAGE_SIZE, total: 0, totalPages: 0 },
+    })
+  }
+
+  // Step 2: get comment IDs for those accounts
+  const { data: userComments } = await supabase
+    .from('comments')
+    .select('id')
+    .in('social_account_id', accountIds)
+
+  const commentIds = (userComments ?? []).map((c: { id: string }) => c.id)
+
+  if (commentIds.length === 0) {
+    return NextResponse.json({
+      data: [],
+      pagination: { page, pageSize: PAGE_SIZE, total: 0, totalPages: 0 },
+    })
+  }
+
+  // Step 3: query ai_replies with comment details
+  let query = supabase
+    .from('ai_replies')
+    .select('*, comment:comments(*)', { count: 'exact' })
+    .in('comment_id', commentIds)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1)
+
+  if (status) {
+    query = query.eq('status', status)
+  }
+
+  const { data, count, error } = await query
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({
-    data: mock,
+    data: data ?? [],
     pagination: {
       page,
       pageSize: PAGE_SIZE,
-      total: 1,
-      totalPages: 1,
+      total: count ?? 0,
+      totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
     },
   })
 }

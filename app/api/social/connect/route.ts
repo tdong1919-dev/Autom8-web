@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 const FB_APP_ID = "1859085634713050"
-const N8N_OAUTH_CALLBACK = "https://tdong1919.app.n8n.cloud/webhook/meta/connect/callback"
 const SCOPES = [
   "pages_show_list",
   "business_management",
@@ -13,6 +12,7 @@ const SCOPES = [
   "pages_read_user_content",
   "pages_manage_engagement",
   "instagram_manage_contents",
+  "instagram_manage_messages",
 ]
 
 // POST /api/social/connect — build Meta OAuth URL and return it to the client
@@ -28,17 +28,19 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Encode userId + returnUrl in state so n8n can associate the connection
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.autom8ig.io'
+  const redirectUri = `${appUrl}/api/social/callback`
+
   const state = encodeURIComponent(
     JSON.stringify({
       userId: user.id,
-      returnUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/dashboard?social_connected=true`,
+      returnUrl: `${appUrl}/dashboard?social_connected=true`,
     })
   )
 
-  const authUrl = new URL('https://www.facebook.com/v20.0/dialog/oauth')
+  const authUrl = new URL('https://www.facebook.com/v23.0/dialog/oauth')
   authUrl.searchParams.set('client_id', FB_APP_ID)
-  authUrl.searchParams.set('redirect_uri', N8N_OAUTH_CALLBACK)
+  authUrl.searchParams.set('redirect_uri', redirectUri)
   authUrl.searchParams.set('scope', SCOPES.join(','))
   authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('state', state)

@@ -215,6 +215,9 @@ function BillingContent() {
         <p className="text-sm text-text-secondary mt-1">
           Every missed comment is a missed lead. Autom8 pays for itself.
         </p>
+        <p className="text-xs text-text-muted mt-2">
+          Already have an account? You&apos;re in the right place.
+        </p>
       </div>
 
       {/* Alerts */}

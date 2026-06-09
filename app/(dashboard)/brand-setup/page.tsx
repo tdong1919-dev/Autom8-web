@@ -50,7 +50,7 @@ export default function BrandSetupPage() {
     phone: "",
     location: "",
     hours: "",
-    bookingLink: "",
+    ctaLinks: [] as { label: string; url: string }[],
     igBusinessId: "",
     tones: [] as string[],
     language: "English",
@@ -64,6 +64,10 @@ export default function BrandSetupPage() {
     faq2: "",
     faq3: "",
     escalationRules: "",
+    dmEnabled: false,
+    dmTriggerKeywords: [] as string[],
+    dmTriggerMode: "keyword" as string,
+    dmTemplate: "",
   });
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,7 +90,13 @@ export default function BrandSetupPage() {
           phone: d.phone ?? "",
           location: d.location ?? "",
           hours: d.hours ?? "",
-          bookingLink: d.booking_link ?? "",
+          ctaLinks: (() => {
+            // Migrate old single booking_link into new array format
+            const stored = d.cta_links
+            if (Array.isArray(stored) && stored.length > 0) return stored
+            if (d.booking_link) return [{ label: 'Sign Up / Pricing', url: d.booking_link }]
+            return []
+          })(),
           igBusinessId: d.ig_business_id ?? "",
           tones: d.tone ?? [],
           language: d.language ?? "English",
@@ -100,6 +110,10 @@ export default function BrandSetupPage() {
           faq2: d.faq_2 ?? "",
           faq3: d.faq_3 ?? "",
           escalationRules: d.escalation_rules ?? "",
+          dmEnabled: d.dm_enabled ?? false,
+          dmTriggerKeywords: d.dm_trigger_keywords ?? [],
+          dmTriggerMode: d.dm_trigger_mode ?? "keyword",
+          dmTemplate: d.dm_template ?? "",
         }));
       })
       .catch(() => {});
@@ -121,7 +135,8 @@ export default function BrandSetupPage() {
           phone: formData.phone,
           location: formData.location,
           hours: formData.hours,
-          booking_link: formData.bookingLink,
+          cta_links: formData.ctaLinks,
+          booking_link: formData.ctaLinks[0]?.url ?? null,
           ig_business_id: formData.igBusinessId || null,
           tone: formData.tones,
           language: formData.language,
@@ -135,6 +150,10 @@ export default function BrandSetupPage() {
           faq_2: formData.faq2,
           faq_3: formData.faq3,
           escalation_rules: formData.escalationRules,
+          dm_enabled: formData.dmEnabled,
+          dm_trigger_keywords: formData.dmTriggerKeywords,
+          dm_trigger_mode: formData.dmTriggerMode,
+          dm_template: formData.dmTemplate || null,
         }),
       });
       if (!res.ok) throw new Error("Save failed");
@@ -172,9 +191,56 @@ export default function BrandSetupPage() {
       }>
         <div className="space-y-4">
           <Input label="Business Name *" value={formData.businessName} onChange={e => set("businessName", e.target.value)} error={errors.businessName} placeholder="Your business name" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Website URL" type="url" value={formData.websiteUrl} onChange={e => set("websiteUrl", e.target.value)} placeholder="https://yourbusiness.com" />
-            <Input label="Booking / Appointment Link" type="url" value={formData.bookingLink} onChange={e => set("bookingLink", e.target.value)} placeholder="https://calendly.com/..." />
+          <Input label="Website URL" type="url" value={formData.websiteUrl} onChange={e => set("websiteUrl", e.target.value)} placeholder="https://yourbusiness.com" />
+
+          {/* CTA Links — multi-link editor */}
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1.5">
+              Booking / Checkout Links
+              <span className="ml-1.5 text-white/30 font-normal">— AI picks the right one based on the post and comment</span>
+            </label>
+            <div className="space-y-2">
+              {formData.ctaLinks.map((link, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <input
+                    type="text"
+                    value={link.label}
+                    onChange={e => {
+                      const updated = [...formData.ctaLinks]
+                      updated[i] = { ...updated[i], label: e.target.value }
+                      set("ctaLinks", updated)
+                    }}
+                    placeholder="Label (e.g. Sign Up, Book a Call, Pricing)"
+                    className="w-36 shrink-0 bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-white/20 focus:outline-none focus:border-primary/50"
+                  />
+                  <input
+                    type="url"
+                    value={link.url}
+                    onChange={e => {
+                      const updated = [...formData.ctaLinks]
+                      updated[i] = { ...updated[i], url: e.target.value }
+                      set("ctaLinks", updated)
+                    }}
+                    placeholder="https://..."
+                    className="flex-1 bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-white/20 focus:outline-none focus:border-primary/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => set("ctaLinks", formData.ctaLinks.filter((_, j) => j !== i))}
+                    className="mt-1 text-white/30 hover:text-error transition-colors text-lg leading-none"
+                    title="Remove"
+                  >×</button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => set("ctaLinks", [...formData.ctaLinks, { label: "", url: "" }])}
+                className="text-xs text-primary/80 hover:text-primary transition-colors flex items-center gap-1 mt-1"
+              >
+                <span className="text-base leading-none">+</span> Add link
+              </button>
+            </div>
+            <p className="text-[11px] text-white/25 mt-1.5">Examples: Sign Up → autom8ig.io/pricing · Book a Demo → cal.com/autom8 · Buy Now → stripe link</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Phone Number" value={formData.phone} onChange={e => set("phone", e.target.value)} placeholder="+1 (555) 000-0000" />
@@ -290,6 +356,79 @@ export default function BrandSetupPage() {
         <Textarea value={formData.escalationRules} onChange={e => set("escalationRules", e.target.value)} placeholder="e.g. Medical diagnoses, complaints, refund requests..." maxLength={1000} />
       </Card>
 
+      {/* DM Chatbot Settings */}
+      <Card header={
+        <div className="flex items-center gap-2">
+          <span className="text-base">💬</span>
+          <h2 className="font-semibold text-sm">DM Chatbot</h2>
+        </div>
+      }>
+        <p className="text-xs text-white/40 mb-4">Automatically reply to Instagram DMs using your Brand Brain.</p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm font-medium text-text-primary">Enable DM Chatbot</p>
+            <p className="text-xs text-text-muted mt-0.5">Auto-reply to incoming DMs 24/7</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => set("dmEnabled", !formData.dmEnabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.dmEnabled ? "bg-primary" : "bg-white/10"}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.dmEnabled ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </div>
+        {formData.dmEnabled && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">DM Trigger Mode</label>
+              <Select
+                value={formData.dmTriggerMode}
+                onChange={e => set("dmTriggerMode", e.target.value)}
+                options={[
+                  { value: "keyword", label: "Keyword only — DM when comment matches keywords" },
+                  { value: "always", label: "Always — DM everyone who comments" },
+                  { value: "direct", label: "Direct DM only — respond to incoming DMs" },
+                ]}
+              />
+            </div>
+            {formData.dmTriggerMode !== "direct" && (
+              <div>
+                <label className="block text-xs font-medium text-text-muted mb-1.5">DM Trigger Keywords</label>
+                <p className="text-xs text-white/30 mb-2">Send a DM when a comment contains any of these words.</p>
+                <TagInput
+                  value={formData.dmTriggerKeywords}
+                  onChange={tags => set("dmTriggerKeywords", tags)}
+                  placeholder='Type a keyword and press Enter (e.g. "price", "info")'
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">DM Message Template</label>
+              <p className="text-xs text-white/30 mb-2">Customize the message sent to users. Use {'{link}'} and {'{business_name}'} as placeholders.</p>
+              <textarea
+                value={formData.dmTemplate}
+                onChange={e => set("dmTemplate", e.target.value)}
+                placeholder='Hey! Thanks for reaching out to {business_name} 🙌
+
+Here&apos;s your link 👉 {link}
+
+Any questions? Just reply here!'
+                className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-white/20 focus:outline-none focus:border-primary/50 font-mono resize-none h-24"
+              />
+              <p className="text-[11px] text-white/25 mt-1.5">
+                Example: &quot;Hey! Thanks for reaching out to {'{business_name}'} 🙌
+                <br />
+                <br />
+                Here&apos;s your link 👉 {'{link}'}
+                <br />
+                <br />
+                No credit card required. Reply if you have questions!&quot;
+              </p>
+            </div>
+          </div>
+        )}
+      </Card>
+
       {/* Connect */}
       <Card className="border-dashed border-primary/20">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -301,10 +440,10 @@ export default function BrandSetupPage() {
         </div>
       </Card>
 
-      {/* Bottom save on mobile */}
-      <div className="sm:hidden pb-4">
+      {/* Bottom save button — always visible */}
+      <div className="pb-4">
         <Button variant="primary" onClick={handleSave} loading={saveState === "saving"} className="w-full">
-          Save Brand Brain
+          {saveState === "saved" ? "✓ Brand Brain Saved!" : saveState === "error" ? "Error — Try Again" : "Save Brand Brain"}
         </Button>
       </div>
     </div>

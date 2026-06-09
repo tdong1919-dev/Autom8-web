@@ -1,7 +1,42 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import MessageCard, { Message, MessageStatus } from "@/components/ui/MessageCard";
-import { mockMessages } from "@/lib/mock-data";
+
+interface InboxRow {
+  id: string;
+  comment_id: string;
+  draft_text: string;
+  edited_text: string | null;
+  status: string;
+  created_at: string;
+  comment?: {
+    id: string;
+    commenter_username: string;
+    comment_text: string;
+    social_account_id: string;
+  };
+}
+
+function mapToMessage(row: InboxRow): Message {
+  const statusMap: Record<string, MessageStatus> = {
+    pending: "review",
+    approved: "approved",
+    posted: "sent",
+    rejected: "escalated",
+  };
+  return {
+    id: row.id,
+    username: row.comment?.commenter_username ?? "unknown",
+    platform: "instagram",
+    comment: row.comment?.comment_text ?? "",
+    aiReply: row.edited_text ?? row.draft_text,
+    status: statusMap[row.status] ?? "review",
+    confidenceScore: 0,
+    detectedIntent: "",
+    tags: [],
+    timestamp: new Date(row.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+  };
+}
 
 type FilterTab = "all" | "auto" | "review" | "escalated";
 
@@ -13,10 +48,25 @@ const TABS: { label: string; value: FilterTab; count?: number }[] = [
 ];
 
 export default function InboxPage() {
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FilterTab>("escalated");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(messages[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/inbox")
+      .then(r => r.json())
+      .then(json => {
+        if (json.data) {
+          const mapped = json.data.map(mapToMessage);
+          setMessages(mapped);
+          setSelectedId(mapped[0]?.id ?? null);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     let result = messages;
@@ -93,7 +143,18 @@ export default function InboxPage() {
 
         {/* Message list */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="text-4xl mb-3 animate-pulse">💬</div>
+              <p className="text-sm font-medium text-text-secondary">Loading...</p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="text-4xl mb-3">📭</div>
+              <p className="text-sm font-medium text-text-secondary">No messages yet</p>
+              <p className="text-xs text-text-muted mt-1">Connect your Instagram account to start receiving comments.</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="text-4xl mb-3">📭</div>
               <p className="text-sm font-medium text-text-secondary">No messages found</p>

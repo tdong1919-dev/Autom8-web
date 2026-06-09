@@ -5,7 +5,6 @@ const protectedPaths = [
   '/dashboard',
   '/inbox',
   '/settings',
-  '/billing',
   '/analytics',
   '/scheduler',
   '/onboarding',

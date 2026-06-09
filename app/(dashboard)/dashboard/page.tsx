@@ -5,7 +5,6 @@ import { getBrandProfile } from "@/lib/actions/brand";
 import MetricCard from "@/components/ui/MetricCard";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { mockActivityFeed } from "@/lib/mock-data";
 
 const activityIcon: Record<string, string> = {
   reply: "💬",
@@ -78,17 +77,83 @@ export default async function DashboardPage() {
     getBrandProfile().catch(() => null),
   ]);
 
-  let reviewCount = 0;
+  // Get recent activity from real ai_replies
+  let recentActivity: Array<{ id: string; text: string; time: string; type: "reply" | "lead" | "inbox" | "escalation" }> = [];
   if (user) {
-    const { count } = await supabase
-      .from("ai_replies")
-      .select(
-        "id, comment:comments!inner(social_account:social_accounts!inner(user_id))",
-        { count: "exact", head: true }
-      )
-      .eq("status", "pending")
-      .eq("comment.social_account.user_id", user.id);
+    // Step 1: get user's social account IDs
+    const { data: userAccounts } = await supabase
+      .from("social_accounts")
+      .select("id, platform")
+      .eq("user_id", user.id);
+
+    const accountIds = (userAccounts ?? []).map((a: { id: string }) => a.id);
+
+    if (accountIds.length > 0) {
+      // Step 2: get recent comment IDs for those accounts
+      const { data: recentComments } = await supabase
+        .from("comments")
+        .select("id, commenter_username, social_account_id")
+        .in("social_account_id", accountIds)
+        .order("received_at", { ascending: false })
+        .limit(20);
+
+      const commentIds = (recentComments ?? []).map((c: { id: string }) => c.id);
+      const commentMap = Object.fromEntries((recentComments ?? []).map((c: { id: string; commenter_username: string; social_account_id: string }) => [c.id, c]));
+
+      if (commentIds.length > 0) {
+        // Step 3: get recent ai_replies for those comments
+        const { data: replies } = await supabase
+          .from("ai_replies")
+          .select("id, status, created_at, comment_id")
+          .in("comment_id", commentIds)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        recentActivity = (replies ?? []).map((r: { id: string; status: string; created_at: string; comment_id: string }) => {
+          const comment = commentMap[r.comment_id] as { commenter_username: string; social_account_id: string } | undefined;
+          const username = comment?.commenter_username ?? "a user";
+          const platform = (userAccounts as Array<{ id: string; platform: string }>)?.find(a => a.id === comment?.social_account_id)?.platform ?? "instagram";
+          const platformLabel = platform.charAt(0).toUpperCase() + platform.slice(1);
+
+          // Format relative time
+          const diffMs = Date.now() - new Date(r.created_at).getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const timeStr = diffMins < 1 ? "just now" : diffMins < 60 ? `${diffMins} min ago` : diffMins < 1440 ? `${Math.floor(diffMins / 60)} hr ago` : `${Math.floor(diffMins / 1440)} days ago`;
+
+          const type: "reply" | "inbox" | "escalation" = r.status === "pending" ? "inbox" : r.status === "rejected" ? "escalation" : "reply";
+          const actionText = r.status === "posted" ? "Auto-replied to" : r.status === "pending" ? "New comment from" : r.status === "rejected" ? "Escalated —" : "Replied to";
+
+          return {
+            id: r.id,
+            text: `${actionText} ${username} on ${platformLabel}`,
+            time: timeStr,
+            type,
+          };
+        });
+      }
+    }
+  }
+
+  let reviewCount = 0;
+  let connectedPlatforms: string[] = [];
+  if (user) {
+    const [{ count }, { data: socialData }] = await Promise.all([
+      supabase
+        .from("ai_replies")
+        .select(
+          "id, comment:comments!inner(social_account:social_accounts!inner(user_id))",
+          { count: "exact", head: true }
+        )
+        .eq("status", "pending")
+        .eq("comment.social_account.user_id", user.id),
+      supabase
+        .from("social_accounts")
+        .select("platform")
+        .eq("user_id", user.id)
+        .eq("status", "active"),
+    ]);
     reviewCount = count ?? 0;
+    connectedPlatforms = (socialData ?? []).map((r: { platform: string }) => r.platform.toLowerCase());
   }
 
   const displayName = (user?.user_metadata?.full_name as string | undefined)
@@ -139,6 +204,32 @@ export default async function DashboardPage() {
           <div className="space-y-2.5">
             {socialAccounts.map((account) => {
               const isLive = account.status === "live";
+              const isConnected = connectedPlatforms.includes(account.name.toLowerCase());
+
+              if (isConnected) {
+                return (
+                  <div key={account.name} className="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5">
+                    <span className="text-xl shrink-0">{account.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-text-primary">{account.name}</p>
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                          Connected
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-muted truncate">{account.desc}</p>
+                    </div>
+                    <Link
+                      href={account.href!}
+                      className="text-[11px] text-text-muted hover:text-text-secondary transition-colors shrink-0 underline underline-offset-2"
+                    >
+                      Reconnect
+                    </Link>
+                  </div>
+                );
+              }
+
               const inner = (
                 <div
                   className={`flex items-center gap-3 p-3 rounded-xl border transition-all group
@@ -180,7 +271,7 @@ export default async function DashboardPage() {
         {/* Activity Feed */}
         <Card header={<h2 className="text-base font-semibold text-text-primary">Recent Activity</h2>}>
           <div className="space-y-3">
-            {mockActivityFeed.map((item) => (
+            {recentActivity.length > 0 ? recentActivity.map((item) => (
               <div key={item.id} className="flex items-start gap-3">
                 <span className="text-base shrink-0 mt-0.5">{activityIcon[item.type]}</span>
                 <div className="flex-1 min-w-0">
@@ -188,7 +279,12 @@ export default async function DashboardPage() {
                   <p className="text-[10px] text-text-muted mt-0.5">{item.time}</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-sm text-text-secondary font-medium">No activity yet</p>
+                <p className="text-xs text-text-muted mt-1">Activity will appear here once your account is connected and receiving comments.</p>
+              </div>
+            )}
           </div>
         </Card>
       </div>
