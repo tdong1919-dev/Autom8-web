@@ -33,7 +33,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopNav onMenuClick={() => setSidebarOpen(true)} user={derivedUser} />
-        <main className="flex-1 overflow-y-auto pb-4">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-4 overscroll-y-contain">
           {children}
         </main>
       </div>
