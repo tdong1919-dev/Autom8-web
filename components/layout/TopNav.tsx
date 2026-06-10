@@ -14,16 +14,17 @@ export default function TopNav({ onMenuClick, user }: TopNavProps) {
   const initials = user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() ?? "D";
 
   return (
-    <header className="h-14 bg-charcoal border-b border-white/5 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
-      {/* Hamburger (mobile) */}
+    <header className="h-14 bg-charcoal border-b border-white/5 flex items-center justify-between px-3 md:px-6 sticky top-0 z-20">
+      {/* Hamburger (mobile) — large, clearly tappable menu button */}
       <button
         onClick={onMenuClick}
-        className="md:hidden text-white/60 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-        aria-label="Toggle menu"
+        className="md:hidden flex items-center gap-1.5 text-white/80 hover:text-white -ml-1 px-2.5 py-2 rounded-lg bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 transition-colors"
+        aria-label="Open navigation menu"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
+        <span className="text-xs font-medium">Menu</span>
       </button>
 
       <div className="hidden md:block" />
