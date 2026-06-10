@@ -8,6 +8,9 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { publishToFacebook, type PublishResult } from './publish/facebook'
+import { publishToX } from './publish/x'
+import { publishToYouTube } from './publish/youtube'
 
 interface PublisherResult {
   processed: number
@@ -20,10 +23,10 @@ export async function runPublisher(): Promise<PublisherResult> {
   const supabase = createServiceClient() as any
   let processed = 0, posted = 0, errors = 0
 
-  // Get all due scheduled posts
+  // All due scheduled posts across every user + platform.
   const { data: duePosts } = await supabase
     .from('content_queue')
-    .select('*, social_accounts(page_token_encrypted, external_account_id)')
+    .select('*')
     .eq('status', 'scheduled')
     .lte('scheduled_time', new Date().toISOString())
     .order('scheduled_time', { ascending: true })
@@ -32,46 +35,81 @@ export async function runPublisher(): Promise<PublisherResult> {
 
   for (const post of duePosts) {
     processed++
-    const account = post.social_accounts as { page_token_encrypted: string | null; external_account_id: string | null } | null
-    const pageToken = account?.page_token_encrypted
-    const igBusinessId = account?.external_account_id
-
-    if (!pageToken || !igBusinessId) {
-      errors++
-      continue
-    }
+    let result: PublishResult = { ok: false, error: `unsupported platform: ${post.platform}` }
 
     try {
-      let success = false
-
       if (post.platform === 'instagram') {
-        success = await publishToInstagram(post, igBusinessId, pageToken)
+        const meta = await getMetaAccount(supabase, post.user_id)
+        if (!meta?.page_token || !meta?.ig_business_id) {
+          result = { ok: false, error: 'Instagram not connected' }
+        } else {
+          const ok = await publishToInstagram(post, meta.ig_business_id, meta.page_token)
+          result = { ok, error: ok ? undefined : 'Instagram publish failed' }
+        }
+      } else if (post.platform === 'facebook') {
+        const meta = await getMetaAccount(supabase, post.user_id)
+        if (!meta?.page_token || !meta?.page_id) {
+          result = { ok: false, error: 'Facebook Page not connected' }
+        } else {
+          result = await publishToFacebook(post, meta.page_id, meta.page_token)
+        }
+      } else if (post.platform === 'x') {
+        result = await publishToX(post)
+      } else if (post.platform === 'youtube') {
+        const yt = await getAccount(supabase, post.user_id, 'youtube')
+        result = await publishToYouTube(post, yt?.access_token_encrypted ?? '')
       }
-      // Additional platforms can be added here
+    } catch (err) {
+      result = { ok: false, error: err instanceof Error ? err.message : 'publish error' }
+    }
 
-      if (success) {
-        await supabase
-          .from('content_queue')
-          .update({ status: 'posted', posted_at: new Date().toISOString() })
-          .eq('id', post.id)
-        posted++
-      } else {
-        await supabase
-          .from('content_queue')
-          .update({ status: 'failed' })
-          .eq('id', post.id)
-        errors++
-      }
-    } catch {
-      errors++
+    if (result.ok) {
       await supabase
         .from('content_queue')
-        .update({ status: 'failed' })
+        .update({ status: 'posted', posted_at: new Date().toISOString(), ig_media_id: result.externalId ?? null })
         .eq('id', post.id)
+      posted++
+    } else {
+      await supabase
+        .from('content_queue')
+        .update({ status: 'failed', schedule_reason: result.error ?? null })
+        .eq('id', post.id)
+      errors++
+      console.error('[publisher]', post.platform, post.id, '→', result.error)
     }
   }
 
   return { processed, posted, errors }
+}
+
+/**
+ * The Meta connection stores ONE social_accounts row (platform 'instagram')
+ * that holds the Page token + page_id + IG business id. Both IG and FB
+ * publishing read from it.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getMetaAccount(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from('social_accounts')
+    .select('page_token_encrypted, page_id, external_account_id')
+    .eq('user_id', userId)
+    .not('page_token_encrypted', 'is', null)
+    .limit(1)
+    .maybeSingle()
+  if (!data) return null
+  return { page_token: data.page_token_encrypted, page_id: data.page_id, ig_business_id: data.external_account_id }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getAccount(supabase: any, userId: string, platform: string) {
+  const { data } = await supabase
+    .from('social_accounts')
+    .select('access_token_encrypted, page_token_encrypted, external_account_id')
+    .eq('user_id', userId)
+    .eq('platform', platform)
+    .eq('status', 'active')
+    .maybeSingle()
+  return data
 }
 
 async function publishToInstagram(

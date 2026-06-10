@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -191,6 +191,20 @@ export default function SchedulerPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [scheduling, setScheduling] = useState(false);
+  const [ytNotice, setYtNotice] = useState<{ type: "ok" | "error"; msg: string } | null>(null);
+
+  // Surface the YouTube connect result (?yt=connected / ?yt_error=...) then clean the URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("yt") === "connected") {
+      setYtNotice({ type: "ok", msg: "YouTube channel connected — you can now schedule YouTube videos." });
+    } else if (params.get("yt_error")) {
+      setYtNotice({ type: "error", msg: `YouTube connection failed: ${params.get("yt_error")}` });
+    }
+    if (params.has("yt") || params.has("yt_error")) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
   const [scheduleError, setScheduleError] = useState("");
   const [activeTab, setActiveTab] = useState<"upload" | "scheduled" | "insights" | "analytics">("upload");
 
@@ -359,6 +373,15 @@ export default function SchedulerPage() {
         </p>
       </div>
 
+      {/* YouTube connect result banner */}
+      {ytNotice && (
+        <div className={`rounded-xl border px-4 py-3 text-sm flex items-center justify-between gap-3
+          ${ytNotice.type === "ok" ? "border-primary/30 bg-primary/5 text-text-primary" : "border-error/30 bg-error/5 text-error"}`}>
+          <span>{ytNotice.msg}</span>
+          <button onClick={() => setYtNotice(null)} className="text-text-muted hover:text-text-primary shrink-0">✕</button>
+        </div>
+      )}
+
       {/* Workflow explainer */}
       <div className="rounded-xl border border-border bg-surface-elevated p-4 flex flex-col sm:flex-row items-start gap-4">
         <div className="flex items-center gap-2 shrink-0">
@@ -443,6 +466,16 @@ export default function SchedulerPage() {
               <p className="text-[11px] text-text-muted mt-3 text-center">
                 Facebook, X, and YouTube scheduling coming soon.
               </p>
+            )}
+            {isAdmin && selectedPlatforms.includes("youtube") && (
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3">
+                <p className="text-xs text-text-secondary">
+                  YouTube uploads need a one-time channel connection.
+                </p>
+                <a href="/api/social/youtube/connect" className="shrink-0 text-xs font-medium text-red-400 border border-red-500/30 rounded-lg px-3 py-1.5 hover:bg-red-500/10 transition-colors">
+                  ▶ Connect YouTube
+                </a>
+              </div>
             )}
           </Card>
 
