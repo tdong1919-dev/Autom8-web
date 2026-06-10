@@ -24,6 +24,18 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
   const offset = (page - 1) * PAGE_SIZE
 
+  // Escalated DM conversations needing a human — independent of comments.
+  // RLS (user_id = auth.uid()) scopes this to the caller.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: escalatedDms } = await (supabase as any)
+    .from('dm_conversations')
+    .select('id, recipient_ig_id, recipient_username, history, handoff_reason, last_message_at')
+    .eq('conversation_stage', 'escalated')
+    .order('last_message_at', { ascending: false })
+    .limit(50)
+
+  const dms = escalatedDms ?? []
+
   // Step 1: get user's social account IDs
   const { data: userAccounts } = await supabase
     .from('social_accounts')
@@ -34,7 +46,7 @@ export async function GET(request: NextRequest) {
 
   if (accountIds.length === 0) {
     return NextResponse.json({
-      data: [],
+      data: [], dms,
       pagination: { page, pageSize: PAGE_SIZE, total: 0, totalPages: 0 },
     })
   }
@@ -49,7 +61,7 @@ export async function GET(request: NextRequest) {
 
   if (commentIds.length === 0) {
     return NextResponse.json({
-      data: [],
+      data: [], dms,
       pagination: { page, pageSize: PAGE_SIZE, total: 0, totalPages: 0 },
     })
   }
@@ -72,6 +84,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     data: data ?? [],
+    dms,
     pagination: {
       page,
       pageSize: PAGE_SIZE,

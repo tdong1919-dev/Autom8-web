@@ -33,8 +33,41 @@ function mapToMessage(row: InboxRow): Message {
     status: statusMap[row.status] ?? "review",
     confidenceScore: 0,
     detectedIntent: "",
-    tags: [],
+    tags: ["Comment"],
     timestamp: new Date(row.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+  };
+}
+
+interface DmRow {
+  id: string;
+  recipient_ig_id: string;
+  recipient_username: string | null;
+  handoff_reason: string | null;
+  last_message_at: string | null;
+  history: { role: string; content: string; ts: string }[] | null;
+}
+
+function mapDmToMessage(dm: DmRow): Message {
+  const history = Array.isArray(dm.history) ? dm.history : [];
+  const lastUser = [...history].reverse().find((m) => m.role === "user");
+  const lastAssistant = [...history].reverse().find((m) => m.role === "assistant");
+  const reasonLabel = dm.handoff_reason === "max_messages_reached"
+    ? "Long conversation — needs a human"
+    : "Sensitive topic (refund/billing/legal) — needs a human";
+  return {
+    // dm: prefix lets handlers route DM actions to the right endpoint
+    id: `dm:${dm.id}`,
+    username: dm.recipient_username ?? `IG ${dm.recipient_ig_id}`,
+    platform: "instagram",
+    comment: lastUser?.content ?? "(no message captured)",
+    aiReply: lastAssistant?.content ?? "",
+    status: "escalated",
+    confidenceScore: 0,
+    detectedIntent: reasonLabel,
+    tags: ["DM", "Needs human"],
+    timestamp: dm.last_message_at
+      ? new Date(dm.last_message_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+      : "",
   };
 }
 
@@ -58,15 +91,32 @@ export default function InboxPage() {
     fetch("/api/inbox")
       .then(r => r.json())
       .then(json => {
-        if (json.data) {
-          const mapped = json.data.map(mapToMessage);
-          setMessages(mapped);
-          setSelectedId(mapped[0]?.id ?? null);
-        }
+        const comments: Message[] = (json.data ?? []).map(mapToMessage);
+        const dmMsgs: Message[] = (json.dms ?? []).map(mapDmToMessage);
+        // Escalated DMs first so handoffs are front-and-center.
+        const all = [...dmMsgs, ...comments];
+        setMessages(all);
+        setSelectedId(all[0]?.id ?? null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Mark an escalated DM handoff as resolved (id is prefixed "dm:").
+  const resolveDm = async (messageId: string) => {
+    const dmId = messageId.replace(/^dm:/, "");
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    setSelectedId(null);
+    try {
+      await fetch("/api/inbox/dm", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: dmId, stage: "resolved" }),
+      });
+    } catch {
+      /* optimistic — already removed from list */
+    }
+  };
 
   const filtered = useMemo(() => {
     let result = messages;
@@ -94,6 +144,10 @@ export default function InboxPage() {
 
   const updateStatus = (id: string, status: MessageStatus) =>
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m)));
+
+  const isDm = (id: string) => id.startsWith("dm:");
+  // For DM handoffs the primary action resolves the conversation; for comments it approves.
+  const handleApprove = (id: string) => (isDm(id) ? resolveDm(id) : updateStatus(id, "approved"));
 
   return (
     <div className="flex h-full bg-bg">
@@ -168,7 +222,7 @@ export default function InboxPage() {
                 compact
                 isSelected={selectedId === msg.id}
                 onSelect={(m) => setSelectedId(m.id)}
-                onApprove={(id) => updateStatus(id, "approved")}
+                onApprove={handleApprove}
                 onEscalate={(id) => updateStatus(id, "escalated")}
                 onSend={(id) => updateStatus(id, "sent")}
               />
@@ -185,7 +239,7 @@ export default function InboxPage() {
               <MessageCard
                 message={selectedMessage}
                 isSelected
-                onApprove={(id) => updateStatus(id, "approved")}
+                onApprove={handleApprove}
                 onEscalate={(id) => updateStatus(id, "escalated")}
                 onSend={(id) => updateStatus(id, "sent")}
               />
@@ -239,7 +293,7 @@ export default function InboxPage() {
             {selectedMessage && (
               <MessageCard
                 message={selectedMessage}
-                onApprove={(id) => { updateStatus(id, "approved"); setSelectedId(null); }}
+                onApprove={(id) => { handleApprove(id); setSelectedId(null); }}
                 onEscalate={(id) => { updateStatus(id, "escalated"); setSelectedId(null); }}
                 onSend={(id) => { updateStatus(id, "sent"); setSelectedId(null); }}
               />
