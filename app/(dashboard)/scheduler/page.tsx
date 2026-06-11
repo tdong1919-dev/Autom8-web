@@ -405,8 +405,8 @@ export default function SchedulerPage() {
         {[
           { id: "upload"    as const, label: "Schedule Content",  icon: "📤" },
           { id: "scheduled" as const, label: "Calendar",          icon: "📅" },
+          { id: "analytics" as const, label: "Platform Analytics", icon: "📈" },
           { id: "insights"  as const, label: "Deeper Analytics",  icon: "📊" },
-          ...(isAdmin ? [{ id: "analytics" as const, label: "Platform Analytics", icon: "📈", internal: true }] : []),
         ].map((tab) => (
           <button
             key={tab.id}
@@ -418,9 +418,6 @@ export default function SchedulerPage() {
               }`}
           >
             <span>{tab.icon}</span> {tab.label}
-            {"internal" in tab && tab.internal && (
-              <span className="text-[9px] font-bold bg-amber-400/15 text-amber-400 px-1.5 py-0.5 rounded-full">Internal</span>
-            )}
           </button>
         ))}
       </div>

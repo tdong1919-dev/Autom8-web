@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -23,10 +24,10 @@ export type PlatformRow = {
 
 function buildMockData(): PlatformRow[] {
   const specs = [
-    { name: 'instagram', account: '@autom8.socials', reach: 8400, impressions: 12000, likes: 380, comments: 45, shares: 62, saves: 93, posts: 2, views: 0 },
-    { name: 'facebook',  account: 'Autom8',          reach: 3200, impressions: 5400,  likes: 120, comments: 28, shares: 35, saves: 0,  posts: 2, views: 0 },
-    { name: 'x',         account: '@autom8hq',        reach: 2100, impressions: 6800,  likes: 89,  comments: 22, shares: 45, saves: 0,  posts: 3, views: 0 },
-    { name: 'youtube',   account: 'Autom8',           reach: 1800, impressions: 4200,  likes: 145, comments: 38, shares: 22, saves: 0,  posts: 1, views: 1200 },
+    { name: 'instagram', account: 'Instagram', reach: 8400, impressions: 12000, likes: 380, comments: 45, shares: 62, saves: 93, posts: 2, views: 0 },
+    { name: 'facebook',  account: 'Facebook',  reach: 3200, impressions: 5400,  likes: 120, comments: 28, shares: 35, saves: 0,  posts: 2, views: 0 },
+    { name: 'x',         account: 'X',         reach: 2100, impressions: 6800,  likes: 89,  comments: 22, shares: 45, saves: 0,  posts: 3, views: 0 },
+    { name: 'youtube',   account: 'YouTube',   reach: 1800, impressions: 4200,  likes: 145, comments: 38, shares: 22, saves: 0,  posts: 1, views: 1200 },
   ]
 
   const noise = [
@@ -85,7 +86,6 @@ type SupabaseRow = {
   date: string | null
   fetched_at: string | null
   platform: string | null
-  account_name: string | null
   reach: number
   impressions: number
   likes: number
@@ -93,7 +93,7 @@ type SupabaseRow = {
   shares: number
   saves: number
   views: number
-  total_followers: number | null
+  followers_gained: number | null
 }
 
 function aggregateRows(rows: SupabaseRow[]): PlatformRow[] {
@@ -119,10 +119,10 @@ function aggregateRows(rows: SupabaseRow[]): PlatformRow[] {
     if (!byKey[key]) {
       byKey[key] = {
         platform: r.platform,
-        account_name: r.account_name || r.platform,
+        account_name: r.platform,
         reach: 0, impressions: 0, likes: 0, comments: 0,
         shares: 0, saves: 0, views: 0, posts: 0,
-        total_followers: r.total_followers || 0,
+        total_followers: 0,
       }
     }
     const a = byKey[key]
@@ -134,7 +134,7 @@ function aggregateRows(rows: SupabaseRow[]): PlatformRow[] {
     a.saves      += r.saves      || 0
     a.views      += r.views      || 0
     a.posts      += 1
-    a.total_followers = Math.max(a.total_followers, r.total_followers || 0)
+    a.total_followers += r.followers_gained || 0
   }
 
   return Object.entries(byKey).map(([key, a]) => {
@@ -166,6 +166,11 @@ function aggregateRows(rows: SupabaseRow[]): PlatformRow[] {
 // ─── Route handler ─────────────────────────────────────────────────────────────
 
 export async function GET() {
+  // Require a session and scope analytics to THIS user — never expose other tenants' data.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   if (!SUPABASE_URL || !SERVICE_KEY) {
     return NextResponse.json({ data: buildMockData(), source: 'mock' })
   }
@@ -173,7 +178,8 @@ export async function GET() {
   try {
     const url =
       `${SUPABASE_URL}/rest/v1/platform_analytics` +
-      `?select=date,fetched_at,platform,account_name,reach,impressions,likes,comments,shares,saves,views,total_followers` +
+      `?select=date,fetched_at,platform,reach,impressions,likes,comments,shares,saves,views,followers_gained` +
+      `&user_id=eq.${user.id}` +
       `&platform=not.is.null` +
       `&order=fetched_at.asc`
 

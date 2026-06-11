@@ -230,9 +230,6 @@ export default function PlatformAnalytics() {
       {/* Header row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold bg-amber-400/10 text-amber-400 border border-amber-400/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
-            Internal Only
-          </span>
           {source === "mock" && (
             <span className="text-[10px] text-text-muted border border-border px-2 py-0.5 rounded-full">
               Preview data — no live data in range
@@ -388,9 +385,9 @@ export default function PlatformAnalytics() {
             <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 flex gap-3 items-start">
               <span className="text-xl shrink-0">📭</span>
               <div>
-                <p className="text-sm font-semibold text-text-primary mb-1">No data in the last 90 days</p>
+                <p className="text-sm font-semibold text-text-primary mb-1">No analytics yet</p>
                 <p className="text-xs text-text-secondary leading-relaxed">
-                  Showing preview data. Once your n8n flow writes rows to the <code className="bg-surface border border-border px-1 rounded text-[11px]">platform_analytics</code> table in Supabase, this dashboard will automatically display live metrics.
+                  Showing sample data. Once your connected platforms have collected metrics, this dashboard will automatically display your live analytics.
                 </p>
               </div>
             </div>
