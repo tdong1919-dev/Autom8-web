@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import PlatformAnalytics from "./PlatformAnalytics";
 import ScheduledCalendar from "./ScheduledCalendar";
+import BestTimes from "./BestTimes";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,152 +32,6 @@ const PLATFORMS: Record<Platform, { label: string; icon: string; color: string; 
   youtube:   { label: "YouTube",   icon: "▶",  color: "#ef4444", textColor: "text-red-400"    },
 };
 
-// ─── Deeper Analytics data ────────────────────────────────────────────────────
-
-type DaySlot = { day: string; time: string; score: number };
-
-const platformBestTimes: Record<Platform, DaySlot[]> = {
-  instagram: [
-    { day: "Mon", time: "11 AM–1 PM",  score: 78 },
-    { day: "Tue", time: "7–9 PM",      score: 88 },
-    { day: "Wed", time: "11 AM–1 PM",  score: 82 },
-    { day: "Thu", time: "7–9 PM",      score: 95 },
-    { day: "Fri", time: "12–2 PM",     score: 85 },
-    { day: "Sat", time: "9–11 AM",     score: 72 },
-    { day: "Sun", time: "6–8 PM",      score: 68 },
-  ],
-  facebook: [
-    { day: "Mon", time: "9–11 AM",     score: 75 },
-    { day: "Tue", time: "1–3 PM",      score: 85 },
-    { day: "Wed", time: "9 AM–12 PM",  score: 80 },
-    { day: "Thu", time: "1–3 PM",      score: 91 },
-    { day: "Fri", time: "10 AM–12 PM", score: 82 },
-    { day: "Sat", time: "10 AM–1 PM",  score: 70 },
-    { day: "Sun", time: "12–2 PM",     score: 65 },
-  ],
-  x: [
-    { day: "Mon", time: "8–10 AM",     score: 80 },
-    { day: "Tue", time: "8–10 AM",     score: 85 },
-    { day: "Wed", time: "9 AM–12 PM",  score: 78 },
-    { day: "Thu", time: "12–3 PM",     score: 90 },
-    { day: "Fri", time: "8–10 AM",     score: 88 },
-    { day: "Sat", time: "9 AM–12 PM",  score: 72 },
-    { day: "Sun", time: "12–3 PM",     score: 65 },
-  ],
-  youtube: [
-    { day: "Mon", time: "2–4 PM",      score: 75 },
-    { day: "Tue", time: "2–4 PM",      score: 82 },
-    { day: "Wed", time: "2–4 PM",      score: 79 },
-    { day: "Thu", time: "2–4 PM",      score: 85 },
-    { day: "Fri", time: "12–3 PM",     score: 88 },
-    { day: "Sat", time: "9 AM–12 PM",  score: 93 },
-    { day: "Sun", time: "9 AM–12 PM",  score: 90 },
-  ],
-};
-
-const platformInsights: Record<Platform, { label: string; value: string }[]> = {
-  instagram: [
-    { label: "Followers",            value: "12.4K" },
-    { label: "Avg. Engagement Rate", value: "3.2%" },
-    { label: "Best Content Type",    value: "Reels" },
-    { label: "Avg. Reach per Post",  value: "8.4K" },
-    { label: "Saves Rate",           value: "1.8%" },
-    { label: "Peak Audience Age",    value: "25–34" },
-  ],
-  facebook: [
-    { label: "Followers",            value: "8.2K" },
-    { label: "Avg. Engagement Rate", value: "1.8%" },
-    { label: "Best Content Type",    value: "Video" },
-    { label: "Avg. Reach per Post",  value: "3.2K" },
-    { label: "Link Click Rate",      value: "0.9%" },
-    { label: "Peak Audience Age",    value: "35–44" },
-  ],
-  x: [
-    { label: "Followers",            value: "3.7K" },
-    { label: "Avg. Engagement Rate", value: "1.2%" },
-    { label: "Best Content Type",    value: "Threads" },
-    { label: "Avg. Impressions",     value: "6.8K" },
-    { label: "Retweet Rate",         value: "0.7%" },
-    { label: "Peak Audience Age",    value: "18–34" },
-  ],
-  youtube: [
-    { label: "Subscribers",          value: "2.1K" },
-    { label: "Avg. View Duration",   value: "4m 12s" },
-    { label: "Best Content Length",  value: "8–12 min" },
-    { label: "Avg. Views per Video", value: "1.2K" },
-    { label: "Subscriber Rate",      value: "0.4%" },
-    { label: "Peak Audience Age",    value: "25–44" },
-  ],
-};
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function BestTimesCard({ platform }: { platform: Platform }) {
-  const slots = platformBestTimes[platform];
-  const cfg = PLATFORMS[platform];
-  const maxScore = Math.max(...slots.map((s) => s.score));
-
-  return (
-    <Card header={
-      <div className="flex items-center gap-2">
-        <span className={`text-sm font-bold ${cfg.textColor}`}>{cfg.icon} {cfg.label}</span>
-        <span className="text-[10px] text-text-muted">— Best times to post</span>
-      </div>
-    }>
-      <div className="space-y-2">
-        {slots.map((slot) => {
-          const isBest = slot.score === maxScore;
-          return (
-            <div key={slot.day} className="flex items-center gap-3">
-              <span className="text-xs font-medium text-text-secondary w-8 shrink-0">{slot.day}</span>
-              <div className="flex-1 h-6 bg-surface rounded-lg overflow-hidden">
-                <div
-                  className={`h-full rounded-lg flex items-center px-2.5 transition-all duration-700 ${
-                    isBest ? "shadow-[0_0_10px_rgba(123,63,242,0.25)]" : ""
-                  }`}
-                  style={{
-                    width: `${slot.score}%`,
-                    background: isBest ? cfg.color : `${cfg.color}40`,
-                  }}
-                >
-                  <span className="text-[10px] text-white font-semibold whitespace-nowrap">{slot.time}</span>
-                </div>
-              </div>
-              <span className={`text-xs font-bold w-7 text-right shrink-0 ${isBest ? cfg.textColor : "text-text-muted"}`}>
-                {slot.score}
-              </span>
-              {isBest && <span className="text-[10px] shrink-0">🔥</span>}
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-function MetricsCard({ platform }: { platform: Platform }) {
-  const cfg = PLATFORMS[platform];
-  const insights = platformInsights[platform];
-
-  return (
-    <Card header={
-      <div className="flex items-center gap-2">
-        <span className={`text-sm font-bold ${cfg.textColor}`}>{cfg.icon} {cfg.label}</span>
-        <span className="text-[10px] text-text-muted">— Key metrics</span>
-      </div>
-    }>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {insights.map((m) => (
-          <div key={m.label} className="rounded-lg bg-surface border border-border px-3 py-2.5">
-            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{m.label}</p>
-            <p className="text-sm font-bold text-text-primary">{m.value}</p>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function SchedulerPage() {
@@ -191,6 +46,7 @@ export default function SchedulerPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [scheduling, setScheduling] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [ytNotice, setYtNotice] = useState<{ type: "ok" | "error"; msg: string } | null>(null);
 
   // Surface the YouTube connect result (?yt=connected / ?yt_error=...) then clean the URL.
@@ -242,14 +98,16 @@ export default function SchedulerPage() {
       const j = await res.json().catch(() => ({}));
       throw new Error(j.error || `Upload failed for ${file.name}`);
     }
-    const { path, token, publicUrl, media_type } = await res.json();
+    const { path, token, publicUrl, media_type, content_type } = await res.json();
 
     // 2. Upload the bytes straight to Supabase Storage (bypasses Vercel's body limit).
+    //    Use the server-resolved content type — files with a missing browser MIME
+    //    would otherwise arrive as application/octet-stream and be rejected.
     const supabase = createClient();
     const { error } = await supabase.storage
       .from("content-media")
-      .uploadToSignedUrl(path, token, file);
-    if (error) throw new Error(error.message);
+      .uploadToSignedUrl(path, token, file, { contentType: content_type || file.type || undefined });
+    if (error) throw new Error(`${file.name}: ${error.message}`);
 
     return { url: publicUrl, media_type };
   };
@@ -514,12 +372,21 @@ export default function SchedulerPage() {
           <Card header={<h2 className="text-sm font-semibold text-text-primary">3 · Upload your content</h2>}>
             <div className="space-y-4">
               <div
-                className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/30 transition-colors cursor-pointer"
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+                  ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const files = Array.from(e.dataTransfer.files ?? []);
+                  if (files.length) setUploadedFiles((prev) => [...prev, ...files]);
+                }}
               >
                 <div className="text-3xl mb-2">📁</div>
                 <p className="text-sm font-medium text-text-primary">Drop photos or videos here</p>
-                <p className="text-xs text-text-muted mt-1">JPG, PNG, MP4, MOV — up to 500MB per file</p>
+                <p className="text-xs text-text-muted mt-1">JPG, PNG, WebP, GIF, HEIC, MP4, MOV — up to 500MB per file</p>
                 <button type="button" className="mt-3 text-xs text-primary border border-primary/30 rounded-lg px-4 py-1.5 hover:bg-primary/5 transition-colors">
                   Browse Files
                 </button>
@@ -630,29 +497,10 @@ export default function SchedulerPage() {
       {/* TAB: Calendar — scheduled content */}
       {activeTab === "scheduled" && <ScheduledCalendar />}
 
-      {/* TAB: Deeper Analytics */}
+      {/* TAB: Best Times — computed from the user's real posting history */}
       {activeTab === "insights" && (
         <div className="space-y-6">
-          <div>
-            <h2 className="text-base font-semibold text-text-primary mb-1">Best Times to Post</h2>
-            <p className="text-xs text-text-muted">Optimal posting windows by platform, based on audience activity patterns.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-5">
-            {(Object.keys(PLATFORMS) as Platform[]).map((p) => (
-              <BestTimesCard key={p} platform={p} />
-            ))}
-          </div>
-
-          <div>
-            <h2 className="text-base font-semibold text-text-primary mb-1 mt-2">Platform Metrics</h2>
-            <p className="text-xs text-text-muted mb-4">Key performance indicators per platform.</p>
-            <div className="grid md:grid-cols-2 gap-5">
-              {(Object.keys(PLATFORMS) as Platform[]).map((p) => (
-                <MetricsCard key={p} platform={p} />
-              ))}
-            </div>
-          </div>
+          <BestTimes />
 
           <Card>
             <div className="flex items-start gap-3">
@@ -660,10 +508,11 @@ export default function SchedulerPage() {
               <div>
                 <p className="text-sm font-semibold text-text-primary mb-1">How we calculate your best times</p>
                 <p className="text-xs text-text-secondary leading-relaxed">
-                  Autom8 analyzes engagement patterns from your connected platforms — scanning your followers&apos; active hours, content-type performance, and similar audience segments to surface the windows where your posts will reach the most people.
+                  Autom8 looks at every post in your connected accounts&apos; history, groups them by day of week and hour posted,
+                  and ranks each window by the average engagement (likes, comments, shares, saves) your content earned there.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {["Follower activity heatmap", "Competitor audience overlap", "Hashtag peak windows", "Content-type engagement rates"].map((item) => (
+                  {["Your real post history", "Day-of-week patterns", "Hour-by-hour engagement", "Per-platform ranking"].map((item) => (
                     <span key={item} className="text-[11px] bg-surface border border-border text-text-muted px-2 py-0.5 rounded-full">{item}</span>
                   ))}
                 </div>

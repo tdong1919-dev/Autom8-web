@@ -16,7 +16,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 const BUCKET = 'content-media'
 const EXT_BY_TYPE: Record<string, string> = {
   'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+  'image/gif': 'gif', 'image/heic': 'heic', 'image/heif': 'heif',
   'video/mp4': 'mp4', 'video/quicktime': 'mov',
+}
+// Fallback when the browser reports no/unknown MIME (iOS Files app, AirDrop, etc.)
+const TYPE_BY_EXT: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  gif: 'image/gif', heic: 'image/heic', heif: 'image/heif',
+  mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/mp4',
 }
 
 export async function POST(request: NextRequest) {
@@ -25,11 +32,20 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => ({}))
-  const contentType: string = body.content_type ?? ''
+  let contentType: string = body.content_type ?? ''
+  const filename: string = body.filename ?? ''
+
+  // If the browser didn't supply a usable MIME type, infer it from the extension.
+  if (!EXT_BY_TYPE[contentType]) {
+    const fileExt = filename.split('.').pop()?.toLowerCase() ?? ''
+    contentType = TYPE_BY_EXT[fileExt] ?? contentType
+  }
 
   const ext = EXT_BY_TYPE[contentType]
   if (!ext) {
-    return NextResponse.json({ error: `Unsupported file type: ${contentType || 'unknown'}` }, { status: 415 })
+    return NextResponse.json({
+      error: `Unsupported file type${filename ? ` for "${filename}"` : ''}. Supported: JPG, PNG, WebP, GIF, HEIC, MP4, MOV.`,
+    }, { status: 415 })
   }
 
   // Server-controlled path keeps the extension (publisher detects video by it)
@@ -50,5 +66,8 @@ export async function POST(request: NextRequest) {
     token: data.token,
     publicUrl: pub.publicUrl,
     media_type: contentType.startsWith('video') ? 'reel' : 'image',
+    // Resolved server-side; client passes this to the storage upload so files
+    // with a missing browser MIME type don't land as application/octet-stream.
+    content_type: contentType,
   })
 }
