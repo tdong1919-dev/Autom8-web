@@ -77,6 +77,12 @@ export interface Database {
         Update: Record<string, never>
         Relationships: []
       }
+      collab_applications: {
+        Row: CollabApplication
+        Insert: CollabApplicationInsert
+        Update: CollabApplicationUpdate
+        Relationships: []
+      }
     }
     Views: { [K in never]: never }
     Functions: { [K in never]: never }
@@ -460,6 +466,58 @@ export interface WaitlistEntryInsert {
   email: string
   source?: string | null
   created_at?: string
+}
+
+// ---------------------------------------------------------------------------
+// collab_applications
+// ---------------------------------------------------------------------------
+
+export type CollabApplicationStatus = 'pending' | 'approved' | 'declined' | 'paused'
+
+export interface CollabApplication {
+  id: string
+  created_at: string
+  user_id: string | null
+  name: string
+  email: string
+  instagram_handle: string
+  follower_count: string | null
+  content_niche: string | null
+  message: string | null
+  status: CollabApplicationStatus
+  referral_code: string | null
+  reviewed_at: string | null
+  notes: string | null
+}
+
+export interface CollabApplicationInsert {
+  id?: string
+  created_at?: string
+  user_id?: string | null
+  name: string
+  email: string
+  instagram_handle: string
+  follower_count?: string | null
+  content_niche?: string | null
+  message?: string | null
+  status?: CollabApplicationStatus
+  referral_code?: string | null
+  reviewed_at?: string | null
+  notes?: string | null
+}
+
+export interface CollabApplicationUpdate {
+  user_id?: string | null
+  name?: string
+  email?: string
+  instagram_handle?: string
+  follower_count?: string | null
+  content_niche?: string | null
+  message?: string | null
+  status?: CollabApplicationStatus
+  referral_code?: string | null
+  reviewed_at?: string | null
+  notes?: string | null
 }
 
 // ---------------------------------------------------------------------------
