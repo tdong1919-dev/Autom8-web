@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const svc = createServiceClient()
+  const svc = createServiceClient() as any
 
   // Check for duplicate by email or handle
   const { data: existing } = await svc
