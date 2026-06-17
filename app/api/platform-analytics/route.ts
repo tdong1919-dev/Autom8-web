@@ -86,6 +86,7 @@ type SupabaseRow = {
   date: string | null
   fetched_at: string | null
   platform: string | null
+  account_name: string | null
   reach: number
   impressions: number
   likes: number
@@ -93,6 +94,7 @@ type SupabaseRow = {
   shares: number
   saves: number
   views: number
+  total_followers: number | null
   followers_gained: number | null
 }
 
@@ -126,6 +128,7 @@ function aggregateRows(rows: SupabaseRow[]): PlatformRow[] {
       }
     }
     const a = byKey[key]
+    if (r.account_name) a.account_name = r.account_name
     a.reach      += r.reach      || 0
     a.impressions += r.impressions || 0
     a.likes      += r.likes      || 0
@@ -134,7 +137,9 @@ function aggregateRows(rows: SupabaseRow[]): PlatformRow[] {
     a.saves      += r.saves      || 0
     a.views      += r.views      || 0
     a.posts      += 1
-    a.total_followers += r.followers_gained || 0
+    // Followers is an account-level snapshot, not a per-post value — take the
+    // largest total_followers seen in the group rather than summing.
+    a.total_followers = Math.max(a.total_followers, r.total_followers || 0)
   }
 
   return Object.entries(byKey).map(([key, a]) => {
@@ -178,7 +183,7 @@ export async function GET() {
   try {
     const url =
       `${SUPABASE_URL}/rest/v1/platform_analytics` +
-      `?select=date,fetched_at,platform,reach,impressions,likes,comments,shares,saves,views,followers_gained` +
+      `?select=date,fetched_at,platform,account_name,reach,impressions,likes,comments,shares,saves,views,total_followers,followers_gained` +
       `&user_id=eq.${user.id}` +
       `&platform=not.is.null` +
       `&order=fetched_at.asc`
