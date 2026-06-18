@@ -14,7 +14,7 @@ export default function TopNav({ onMenuClick, user }: TopNavProps) {
   const initials = user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() ?? "D";
 
   return (
-    <header className="h-14 bg-charcoal border-b border-white/5 flex items-center justify-between px-3 md:px-6 sticky top-0 z-20">
+    <header className="bg-charcoal border-b border-white/5 flex items-center justify-between px-3 md:px-6 sticky top-0 z-30 h-14 pt-[env(safe-area-inset-top)] box-content">
       {/* Hamburger (mobile) — large, clearly tappable menu button */}
       <button
         onClick={onMenuClick}

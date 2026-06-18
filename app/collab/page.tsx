@@ -61,20 +61,19 @@ export default function CollabPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#0b0218", color: "#e6dff5", fontFamily: "Inter, -apple-system, sans-serif" }}>
+    <div className="min-h-[100dvh] overflow-x-hidden" style={{ background: "#0b0218", color: "#e6dff5", fontFamily: "Inter, -apple-system, sans-serif" }}>
 
       {/* NAV */}
       <header style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(11,2,24,0.85)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+        <div className="mx-auto flex items-center justify-between gap-3 px-4 sm:px-6" style={{ maxWidth: 1100, height: 60 }}>
+          <Link href="/" className="shrink-0" style={{ display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
             <Image src="/logo-icon.png" alt="Autom8" width={32} height={32} style={{ objectFit: "contain" }} />
-            <span style={{ fontWeight: 800, fontSize: 17, color: "#fff", letterSpacing: "-0.3px" }}>autom8<em style={{ fontStyle: "italic", background: "linear-gradient(90deg,#f857a6,#7b3ff2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>ig</em></span>
+            <span style={{ fontWeight: 800, fontSize: 17, color: "#fff", letterSpacing: "-0.3px" }}>autom8<em style={{ fontStyle: "italic", background: "linear-gradient(90deg,#f857a6,#7b3ff2)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>collab</em></span>
           </Link>
-          <nav style={{ display: "flex", alignItems: "center", gap: 20 }}>
-            <Link href="/#features" style={{ color: "rgba(230,223,245,0.6)", fontSize: 14, textDecoration: "none" }}>Features</Link>
-            <Link href="/#pricing" style={{ color: "rgba(230,223,245,0.6)", fontSize: 14, textDecoration: "none" }}>Pricing</Link>
-            <Link href="/collab" style={{ color: "#f857a6", fontSize: 14, textDecoration: "none", fontWeight: 600 }}>Collab Program</Link>
-            <Link href="/signup" style={{ background: "linear-gradient(95deg,#f857a6,#7b3ff2)", color: "#fff", fontSize: 13, fontWeight: 700, padding: "7px 16px", borderRadius: 8, textDecoration: "none" }}>Start / Sign In</Link>
+          <nav className="flex items-center gap-4 sm:gap-5">
+            <Link href="/#features" className="hidden sm:inline" style={{ color: "rgba(230,223,245,0.6)", fontSize: 14, textDecoration: "none" }}>Features</Link>
+            <Link href="/#pricing" className="hidden sm:inline" style={{ color: "rgba(230,223,245,0.6)", fontSize: 14, textDecoration: "none" }}>Pricing</Link>
+            <Link href="/signup" className="shrink-0 whitespace-nowrap" style={{ background: "linear-gradient(95deg,#f857a6,#7b3ff2)", color: "#fff", fontSize: 13, fontWeight: 700, padding: "7px 14px", borderRadius: 8, textDecoration: "none" }}>Start / Sign In</Link>
           </nav>
         </div>
       </header>

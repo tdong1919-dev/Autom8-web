@@ -27,7 +27,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen bg-bg overflow-hidden">
+    <div className="flex h-[100dvh] bg-bg overflow-hidden">
       {/* Desktop sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
