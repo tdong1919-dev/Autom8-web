@@ -13,6 +13,7 @@ const protectedPaths = [
   '/help',
   '/waitlist-access',
   '/blog-admin',
+  '/collab-admin',
 ]
 
 const authPaths = ['/login', '/signup']
