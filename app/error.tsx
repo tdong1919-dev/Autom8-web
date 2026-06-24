@@ -36,9 +36,11 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         <div className="text-4xl mb-3">😕</div>
         <h1 className="text-lg font-semibold text-text-primary mb-1">Something went wrong</h1>
         <p className="text-sm text-text-muted mb-4">An unexpected error occurred. Try again, or reload the page.</p>
-        {(error?.message || error?.digest) && (
-          <pre className="text-left text-[11px] text-red-300/90 bg-red-500/5 border border-red-500/20 rounded-lg p-3 mb-5 overflow-x-auto whitespace-pre-wrap break-words">
-            {error.message || ""}{error.digest ? `\n\n[digest: ${error.digest}]` : ""}
+        {(error?.message || error?.digest || error?.stack) && (
+          <pre className="text-left text-[10px] leading-relaxed text-red-300/90 bg-red-500/5 border border-red-500/20 rounded-lg p-3 mb-5 max-h-60 overflow-auto whitespace-pre-wrap break-words">
+            {error.message || ""}
+            {error.digest ? `\n[digest: ${error.digest}]` : ""}
+            {error.stack ? `\n\n${error.stack.split("\n").slice(0, 6).join("\n")}` : ""}
           </pre>
         )}
         <div className="flex gap-2 justify-center">
