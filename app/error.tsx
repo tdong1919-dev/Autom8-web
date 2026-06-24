@@ -32,10 +32,15 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-6">
-      <div className="max-w-sm text-center">
+      <div className="max-w-md text-center">
         <div className="text-4xl mb-3">😕</div>
         <h1 className="text-lg font-semibold text-text-primary mb-1">Something went wrong</h1>
-        <p className="text-sm text-text-muted mb-5">An unexpected error occurred. Try again, or reload the page.</p>
+        <p className="text-sm text-text-muted mb-4">An unexpected error occurred. Try again, or reload the page.</p>
+        {(error?.message || error?.digest) && (
+          <pre className="text-left text-[11px] text-red-300/90 bg-red-500/5 border border-red-500/20 rounded-lg p-3 mb-5 overflow-x-auto whitespace-pre-wrap break-words">
+            {error.message || ""}{error.digest ? `\n\n[digest: ${error.digest}]` : ""}
+          </pre>
+        )}
         <div className="flex gap-2 justify-center">
           <button onClick={reset} className="text-sm font-medium text-white bg-gradient-to-r from-accent-pink to-accent-purple rounded-lg px-5 py-2.5">
             Try again
