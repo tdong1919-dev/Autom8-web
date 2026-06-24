@@ -35,14 +35,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <div className="max-w-md text-center">
         <div className="text-4xl mb-3">😕</div>
         <h1 className="text-lg font-semibold text-text-primary mb-1">Something went wrong</h1>
-        <p className="text-sm text-text-muted mb-4">An unexpected error occurred. Try again, or reload the page.</p>
-        {(error?.message || error?.digest || error?.stack) && (
-          <pre className="text-left text-[10px] leading-relaxed text-red-300/90 bg-red-500/5 border border-red-500/20 rounded-lg p-3 mb-5 max-h-60 overflow-auto whitespace-pre-wrap break-words">
-            {error.message || ""}
-            {error.digest ? `\n[digest: ${error.digest}]` : ""}
-            {error.stack ? `\n\n${error.stack.split("\n").slice(0, 6).join("\n")}` : ""}
-          </pre>
-        )}
+        <p className="text-sm text-text-muted mb-5">An unexpected error occurred. Try again, or reload the page.</p>
         <div className="flex gap-2 justify-center">
           <button onClick={reset} className="text-sm font-medium text-white bg-gradient-to-r from-accent-pink to-accent-purple rounded-lg px-5 py-2.5">
             Try again
