@@ -8,7 +8,7 @@ import { useEffect } from "react";
  */
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   const isChunkError =
-    /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|importing a module script failed/i.test(
+    /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed|Load failed|Unable to load|Failed to load/i.test(
       error?.message ?? ""
     ) || error?.name === "ChunkLoadError";
 
